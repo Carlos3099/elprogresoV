@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elprogreso_app
+    ports:
+      - "8020:8000"
+      - "5174:5173"
+    volumes:
+      - ./src:/var/www/html
+      - ./vendor:/var/www/html/vendor
+      - composer-cache-elprogreso:/tmp/composer-cache
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    command: sh -c "composer install && php artisan serve --host=0.0.0.0 --port=8000"
+
+  node:
+    image: node:20
+    container_name: elprogreso_node
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+      - node_modules_elprogreso:/var/www/html/node_modules
+    command: sh -c "npm install && npm run dev"
+
+  mysql:
+    image: mysql:8.0
+    container_name: elprogreso_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: elprogreso
+      MYSQL_USER: elprogreso
+      MYSQL_PASSWORD: elprogreso
+    ports:
+      - "3320:3306"
+    volumes:
+      - elprogreso_mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: elprogreso_phpmyadmin
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+
+volumes:
+  elprogreso_mysql_data:
+  composer-cache-elprogreso:
+  node_modules_elprogreso:
