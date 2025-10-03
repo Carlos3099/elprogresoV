@@ -99,4 +99,3 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::fallback(function () {
     return redirect()->route('login');
 });
-SS
