@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   app:
     build:
@@ -5,8 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: elprogreso_app
     ports:
-      - "8020:8000"
-      - "5174:5173"
+      - "8020:8000"   # Laravel (artisan serve)
+      - "5174:5173"   # Vite
     volumes:
       - ./src:/var/www/html
       - ./vendor:/var/www/html/vendor
@@ -14,7 +16,7 @@ services:
     depends_on:
       - mysql
     working_dir: /var/www/html
-    command: sh -c "composer install && php artisan serve --host=0.0.0.0 --port=8000"
+    command: php artisan serve --host=0.0.0.0 --port=8000   # ✅ sin composer install
 
   node:
     image: node:20
