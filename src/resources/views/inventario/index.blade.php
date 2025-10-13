@@ -1,144 +1,145 @@
 @extends('layouts.app')
 
-@section('title', 'Inventario - CRM')
-
-@section('page-title', 'Gestión de Inventario')
+@section('title', 'Inventario - El Progreso')
 
 @section('content')
-<div class="bg-white p-3 md:p-6 rounded-lg shadow">
-    <!-- Encabezado con botones -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-        <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-2 md:mb-0">
-            <i class="fas fa-box-open mr-3 text-purple-500"></i>
-            Inventario - Sucursal: {{ Auth::user()->sucursal->nombre ?? 'N/A' }}
-        </h3>
-    </div>
+<div class="min-h-screen bg-gray-50 p-6">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[75%_25%] gap-6">
 
-    <!-- Filtros -->
-    <div class="bg-gray-50 p-3 md:p-4 rounded-lg mb-4 md:mb-6">
-        <form method="GET" action="{{ route('inventario.index') }}" class="space-y-2 md:space-y-0 md:flex md:gap-4 md:items-end">
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                <input type="text" name="search" value="{{ request('search') }}" 
-                       class="w-full p-2 border rounded-md text-sm" placeholder="SKU, nombre o descripción">
-            </div>
+    <!-- ================== COLUMNA IZQUIERDA ================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <!-- Encabezado -->
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-semibold flex items-center gap-2 text-gray-800">
+          📦 Inventario
+        </h2>
+        <a href="{{ route('productos.create') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm shadow transition">
+          + Producto nuevo
+        </a>
+      </div>
 
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="activo" class="w-full p-2 border rounded-md text-sm">
-                    <option value="">Todos</option>
-                    <option value="1" {{ request('activo') == '1' ? 'selected' : '' }}>Activos</option>
-                    <option value="0" {{ request('activo') == '0' ? 'selected' : '' }}>Inactivos</option>
-                </select>
-            </div>
+      <!-- Tabla -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden text-sm">
+          <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-3 text-left">Producto</th>
+              <th class="px-4 py-3 text-center text-green-600">Entradas</th>
+              <th class="px-4 py-3 text-center text-red-600">Salidas</th>
+              <th class="px-4 py-3 text-center text-blue-600">Stock Actual</th>
+              <th class="px-4 py-3 text-center">Estado</th>
+              <th class="px-4 py-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
 
-            <div class="flex gap-2 pt-2 md:pt-0">
-                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center text-sm flex-1 justify-center">
-                    <i class="fas fa-filter mr-1"></i> Filtrar
-                </button>
-                <a href="{{ route('inventario.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg flex items-center text-sm flex-1 justify-center">
-                    <i class="fas fa-times mr-1"></i> Limpiar
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <!-- Tabla de inventario optimizada para móviles -->
-    <div class="overflow-x-auto">
-        <!-- Vista para móviles (tarjetas) -->
-        <div class="md:hidden space-y-3">
             @forelse($existencias as $existencia)
-                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <div class="font-medium text-gray-900">{{ $existencia->producto->nombre }}</div>
-                            <div class="text-sm text-gray-500">{{ $existencia->producto->sku }}</div>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-medium text-green-600">${{ number_format($existencia->producto->precio, 2) }}</span>
-                            <div class="text-sm text-gray-600 mt-1">Stock: {{ $existencia->stock_actual }}</div>
-                            <div class="text-xs text-red-600">Mínimo: {{ $existencia->stock_minimo }}</div>
-                        </div>
-                    </div>
+              @php
+                $producto = $existencia->producto;
+                $estado = $existencia->stock_actual > $existencia->stock_minimo * 1.5 ? 'Alto' :
+                          ($existencia->stock_actual > $existencia->stock_minimo ? 'Medio' : 'Bajo');
+                $color = match($estado) {
+                  'Alto' => 'bg-green-100 text-green-700',
+                  'Medio' => 'bg-yellow-100 text-yellow-700',
+                  'Bajo' => 'bg-red-100 text-red-700',
+                };
+              @endphp
 
-                    <div class="text-sm text-gray-600 mb-2">{{ Str::limit($existencia->producto->descripcion, 80) }}</div>
+              <tr class="hover:bg-gray-50 transition text-center">
+                <form action="{{ route('inventario.update', $existencia) }}" method="POST" class="contents">
+                  @csrf
+                  @method('PUT')
 
-                    <div class="flex items-center mb-2">
-                        <span class="text-xs text-gray-500">{{ $existencia->producto->proveedor }}</span>
-                        <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full {{ $existencia->producto->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                            {{ $existencia->producto->activo ? 'Activo' : 'Inactivo' }}
-                        </span>
-                    </div>
+                  <!-- Producto -->
+                  <td class="px-4 py-3 font-medium text-gray-800 text-left">
+                    📦 {{ $producto->nombre }}
+                  </td>
 
-                    <div class="flex justify-between items-center pt-2 border-t border-gray-100">
-                        <div class="flex space-x-2">
-                            <a href="{{ route('inventario.edit', $existencia) }}" class="text-blue-500 hover:text-blue-700 p-1" title="Editar Stock">
-                                <i class="fas fa-edit text-sm"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                  <!-- Entradas -->
+                  <td class="px-4 py-3">
+                    <input type="number" name="entrada" value="0"
+                      class="w-20 mx-auto text-center border border-green-300 rounded-md text-sm p-1 focus:ring-green-500 focus:border-green-500 text-green-700">
+                  </td>
+
+                  <!-- Salidas -->
+                  <td class="px-4 py-3">
+                    <input type="number" name="salida" value="0"
+                      class="w-20 mx-auto text-center border border-red-300 rounded-md text-sm p-1 focus:ring-red-500 focus:border-red-500 text-red-700">
+                  </td>
+
+                  <!-- Stock Actual -->
+                  <td class="px-4 py-3">
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold inline-block min-w-[55px]">
+                      {{ $existencia->stock_actual }}
+                    </span>
+                  </td>
+
+                  <!-- Estado -->
+                  <td class="px-4 py-3">
+                    <span class="{{ $color }} px-3 py-1 rounded-full text-xs font-semibold inline-block min-w-[60px]">
+                      {{ $estado }}
+                    </span>
+                  </td>
+
+                  <!-- Botones -->
+                  <td class="px-4 py-3 flex justify-center gap-2">
+                    <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-medium shadow transition flex items-center gap-1">
+                      💾 <span>Guardar</span>
+                    </button>
+                    <a href="{{ route('inventario.movimientos', $existencia->producto_id) }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-medium shadow transition flex items-center gap-1">
+                      🕓 <span>Ver</span>
+                    </a>
+                  </td>
+                </form>
+              </tr>
             @empty
-                <div class="text-center py-6 text-gray-500">
-                    No se encontraron items en el inventario.
-                </div>
+              <tr>
+                <td colspan="6" class="px-4 py-3 text-center text-gray-500">
+                  No hay productos registrados.
+                </td>
+              </tr>
             @endforelse
-        </div>
-
-        <!-- Vista para desktop (tabla) -->
-        <table class="min-w-full bg-white border border-gray-200 hidden md:table">
-            <thead>
-                <tr class="bg-gray-50">
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th class="px-4 py-2 border text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-                @forelse($existencias as $existencia)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 border">{{ $existencia->producto->sku }}</td>
-                        <td class="px-4 py-3 border font-medium">{{ $existencia->producto->nombre }}</td>
-                        <td class="px-4 py-3 border text-sm">{{ Str::limit($existencia->producto->descripcion, 50) }}</td>
-                        <td class="px-4 py-3 border font-medium text-green-600">${{ number_format($existencia->producto->precio, 2) }}</td>
-                        <td class="px-4 py-3 border font-medium {{ $existencia->stock_actual > $existencia->stock_minimo ? 'text-blue-600' : 'text-red-600' }}">
-                            {{ $existencia->stock_actual }}
-                        </td>
-                        <td class="px-4 py-3 border text-sm">{{ $existencia->stock_minimo }}</td>
-                        <td class="px-4 py-3 border">{{ $existencia->producto->proveedor }}</td>
-                        <td class="px-4 py-3 border">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full {{ $existencia->producto->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                {{ $existencia->producto->activo ? 'Activo' : 'Inactivo' }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 border">
-                            <div class="flex space-x-2">
-                                <a href="{{ route('inventario.edit', $existencia) }}" class="text-blue-500 hover:text-blue-700 p-1" title="Editar Stock">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="px-4 py-4 border text-center text-gray-500">
-                            No se encontraron items en el inventario.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
+          </tbody>
         </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="mt-4">
+        {{ $existencias->links() }}
+      </div>
     </div>
 
-    <!-- Paginación responsive -->
-    <div class="mt-4 md:mt-6">
-        {{ $existencias->links() }}
+    <!-- ================== COLUMNA DERECHA (REDUCIDA) ================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 h-fit w-full">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">📊 Reportes y Totales</h3>
+
+      <!-- Ventas -->
+      <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-3 text-center">
+        <p class="text-sm font-medium text-green-800">💵 Ventas del Día</p>
+        <h4 class="text-3xl font-bold text-green-700 mt-1">{{ number_format($ventasDia, 0) }}</h4>
+      </div>
+
+      <!-- Merma -->
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-3 text-center">
+        <p class="text-sm font-medium text-red-800">📉 Merma del Día</p>
+        <h4 class="text-3xl font-bold text-red-700 mt-1">{{ number_format($mermaDia, 0) }}</h4>
+      </div>
+
+      <!-- Stock agregado -->
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-3 text-center">
+        <p class="text-sm font-medium text-blue-800">📦 Stock Agregado</p>
+        <h4 class="text-3xl font-bold text-blue-700 mt-1">{{ number_format($stockAgregado, 0) }}</h4>
+      </div>
+
+      <!-- Acumulado semanal -->
+      <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+        <p class="text-sm font-medium text-orange-800">📅 Acumulado Semana</p>
+        <h4 class="text-3xl font-bold text-orange-700 mt-1">{{ number_format($acumuladoSemana, 0) }}</h4>
+      </div>
     </div>
+  </div>
 </div>
 @endsection

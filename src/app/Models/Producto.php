@@ -1,5 +1,4 @@
 <?php
-// [file name]: Producto.php
 
 namespace App\Models;
 
@@ -15,11 +14,31 @@ class Producto extends Model
         'nombre',
         'descripcion',
         'precio',
-        'activo'
+        'activo',
     ];
 
     protected $casts = [
         'precio' => 'decimal:2',
-        'activo' => 'boolean'
+        'activo' => 'boolean',
     ];
+
+    // ================================
+    // 🔗 RELACIONES
+    // ================================
+
+    /**
+     * Relación con existencias (stock por sucursal)
+     */
+    public function existencias()
+    {
+        return $this->hasMany(Existencia::class);
+    }
+
+    /**
+     * Relación con movimientos de inventario
+     */
+    public function movimientos()
+    {
+        return $this->hasMany(InventarioMovimiento::class);
+    }
 }
